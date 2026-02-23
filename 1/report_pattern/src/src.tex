@@ -1,0 +1,138 @@
+\section{Описание}
+
+Алгоритм сортировки подсчётом основан на использовании дополнительного массива,
+в котором для каждого значения ключа накапливается количество соответствующих
+элементов. После этого по накопленным значениям вычисляются позиции элементов в
+отсортированной последовательности.
+
+В реализованной программе применяется стабильный вариант сортировки, при котором
+относительный порядок элементов с одинаковыми ключами сохраняется.
+
+В отличие от классической реализации, в которой массив счётчиков имеет размер,
+равный всему допустимому диапазону ключей, в данной работе используется только
+поддиапазон, определяемый минимальным и максимальным ключами, присутствующими во
+входных данных. Это позволяет сократить объём используемой памяти.
+
+Процесс сортировки включает следующие шаги:
+
+\begin{enumerate}
+    \item Чтение всех пар \texttt{(key, value)} и определение минимального и
+    максимального значений ключа;
+    \item Формирование массива счётчиков для диапазона ключей
+    \texttt{[min\_key, max\_key]};
+    \item Вычисление накопленных (префиксных) сумм в массиве счётчиков;
+    \item Перенос элементов во вспомогательный массив в порядке обхода исходного
+    массива от последнего элемента к первому.
+\end{enumerate}
+
+Обратный порядок просмотра входного массива обеспечивает стабильность
+сортировки, то есть сохранение исходного порядка элементов с одинаковыми
+ключами.
+
+Асимптотические характеристики алгоритма имеют вид:
+\begin{itemize}
+    \item временная сложность — $O(n + k)$, где $n$ — количество входных пар,
+    $k = \texttt{max\_key} - \texttt{min\_key} + 1$ — размер используемого диапазона
+    ключей;
+    \item дополнительная память — $O(n + k)$.
+\end{itemize}
+
+\pagebreak
+
+\section{Исходный код}
+
+Для хранения данных используется тип
+
+\[
+\texttt{Pair} = \texttt{std::pair<int, std::string>}.
+\]
+
+Все считанные данные помещаются в вектор \texttt{data}. В процессе чтения
+одновременно вычисляются минимальное и максимальное значения ключа.
+
+Если входной массив пуст, функция сразу завершает работу.
+
+На основе найденного диапазона создаётся и заполняется нулями массив счётчиков, в котором
+индекс соответствует смещению ключа относительно \texttt{min\_key}. Далее выполняется
+подсчёт количества элементов каждого ключа и построение массива префиксных сумм.
+
+После этого формируется временный массив \texttt{sort\_data}, в который
+последовательно размещаются элементы исходного массива. Размещение выполняется
+при проходе по \texttt{data} в обратном порядке, что гарантирует сохранение
+стабильности сортировки.
+
+По завершении сортировки элементы выводятся в стандартный поток вывода.
+Ключ печатается в виде шестизначного числа с ведущими нулями, а значение выводится
+без дополнительных символов заполнения.
+
+\begin{lstlisting}[language=C++]
+#include <iomanip>
+#include <iostream>
+#include <string>
+#include <vector>
+#include <algorithm>
+
+using Pair = std::pair<int, std::string>;
+
+int main() {
+    std::ios::sync_with_stdio(false);
+    std::cin.tie(nullptr);
+
+    std::vector<Pair> data;
+    int n = 0;
+    
+    int max_key = 0;
+    int min_key = 1000000;
+
+    int key;
+    std::string value;
+
+    while (std::cin >> key >> value) {
+        max_key = std::max(max_key, key);
+        min_key = std::min(min_key, key);
+        
+        data.push_back({key, value});
+        ++n;
+    }
+
+    if (data.empty()) return 0;
+
+    int k = max_key - min_key;
+    std::vector<int> key_list(k + 1, 0);
+
+    for (const auto& entry : data)
+        ++key_list[entry.first - min_key];
+
+    for (int i = 1; i < k + 1; ++i)
+        key_list[i] += key_list[i - 1];
+
+    std::vector<Pair> sort_data(n);
+
+    for (int i = n - 1; i >= 0; --i) {
+        int key = data[i].first;
+        int pos = --key_list[key - min_key];
+        sort_data[pos] = std::move(data[i]);
+    }
+
+    for (const auto& entry : sort_data)
+        std::cout << std::setw(6) << std::setfill('0') << entry.first << '\t' << entry.second << '\n';
+}
+	
+\end{lstlisting}
+\pagebreak
+
+\section{Консоль}
+\begin{alltt}
+root$ g++ main.cpp
+root$ cat test1 
+000000	n399tann9nnt3ttnaaan9nann93na9t3a3t9999na3aan9antt3tn93aat3naatt
+999999	n399tann9nnt3ttnaaan9nann93na9t3a3t9999na3aan9antt3tn93aat3naat
+000000	n399tann9nnt3ttnaaan9nann93na9t3a3t9999na3aan9antt3tn93aat3naa
+999999	n399tann9nnt3ttnaaan9nann93na9t3a3t9999na3aan9antt3tn93aat3na
+root$ ./a.out < test1 
+000000	n399tann9nnt3ttnaaan9nann93na9t3a3t9999na3aan9antt3tn93aat3naatt
+000000	n399tann9nnt3ttnaaan9nann93na9t3a3t9999na3aan9antt3tn93aat3naa
+999999	n399tann9nnt3ttnaaan9nann93na9t3a3t9999na3aan9antt3tn93aat3naat
+999999	n399tann9nnt3ttnaaan9nann93na9t3a3t9999na3aan9antt3tn93aat3na
+\end{alltt}
+\pagebreak
