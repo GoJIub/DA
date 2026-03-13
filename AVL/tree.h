@@ -28,6 +28,13 @@ private:
 
     Node* build(const T& value, Node* left, Node* right);
     void destroy(Node*& node);
+    Node** linkToNode(Node* node);
+    void rotateLeft(Node** link);
+    void rotateRight(Node** link);
+    void rotate(Node* node);
+    void updateBalance(Node* node, bool isLeft, bool isAdd);
+    bool addImpl(Node*& node, const T& value, Node* parent);
+    bool removeImpl(Node*& node, const T& value);
 
     static bool isEmpty(Node* node);
     static const T& getValue(Node* node);

@@ -4,7 +4,7 @@
 
 int main() {
     int command;
-    tree t = createEmpty();
+    AVLTree<int> t;
     int value;
     bool running = true;
 
@@ -23,7 +23,7 @@ int main() {
                     running = false;
                     break;
                 }
-                add(&t, value);
+                t.add(value);
                 break;
             case 2:
                 std::cout << ">> Enter value: ";
@@ -31,10 +31,10 @@ int main() {
                     running = false;
                     break;
                 }
-                remove(&t, value);
+                t.remove(value);
                 break;
             case 3:
-                print(t);
+                t.print();
                 break;
             default:
                 break;
@@ -42,5 +42,4 @@ int main() {
     }
 
     std::cout << '\n';
-    destroy(&t);
 }
