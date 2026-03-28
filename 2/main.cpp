@@ -1,12 +1,15 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <cstdint>
+#include <algorithm>
+#include <optional>
 
 class PATRICIA {
     struct Node {
-        int bit;
         std::string key;
         uint64_t value;
+        int bit;
         Node* left;
         Node* right;
 
@@ -20,12 +23,18 @@ public:
         head->left = head;
     }
 
-    Node* search(const std::string& key) {
-        return traverse(key).second;
+    std::optional<uint64_t> search(std::string key) {
+        toLowerCase(key);
+
+        Node* t = traverse(key).second;
+        if (t->key != key) return std::nullopt;
+        return t->value;
     }
 
-    bool insert(const std::string& key, uint64_t value) {
-        Node* t = search(key);
+    bool insert(std::string key, uint64_t value) {
+        toLowerCase(key);
+
+        Node* t = traverse(key).second;
         if (t->key == key) return false; 
 
         int newBit = 0;
@@ -54,7 +63,9 @@ public:
         return true;
     }
 
-    bool remove(const std::string& key) {
+    bool remove(std::string key) {
+        toLowerCase(key);
+
         auto [p, x] = traverse(key);
         if (x->key != key) return false;
 
@@ -97,6 +108,10 @@ private:
         return (key[charIdx] >> bitIdx) & 1;
     }
 
+    void toLowerCase(std::string& key) {
+        std::transform(key.begin(), key.end(), key.begin(), ::tolower);
+    }
+
     std::pair<Node*, Node*> traverse(const std::string& key) {
         Node* prev = head;
         Node* cur = head->left;
@@ -108,3 +123,44 @@ private:
         return {prev, cur};
     }
 };
+
+
+void serialize(PATRICIA P) {}
+void deserialize(PATRICIA P) {}
+
+
+int main() {
+    PATRICIA P;
+
+    std::string cmd;
+    while (std::cin >> cmd) {
+        if (cmd == "+") {
+            std::string word;
+            uint64_t value;
+            std::cin >> word >> value;
+
+            if (P.insert(word, value)) std::cout << "OK\n";
+            else std::cout << "Exist\n";
+        } else if (cmd == "-") {
+            std::string word;
+            std::cin >> word;
+
+            if (P.remove(word)) std::cout << "OK\n";
+            else std::cout << "NoSuchWord\n";
+        } else if (cmd == "!") {
+            std::string action, path;
+            std::cin >> action >> path;
+
+            if (action == "Save") {
+                serialize(P);
+            } else {
+                deserialize(P);
+            }
+        } else {
+            auto result = P.search(cmd);
+
+            if (result) std::cout << "OK:" << *result << "\n";
+            else std::cout << "NoSuchWord\n";
+        }
+    }
+}
