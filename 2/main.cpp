@@ -20,22 +20,29 @@ public:
         head->left = head;
     }
 
-    bool insert(std::string key, uint64_t value) {
-        Node* f = search(key);
-        if (key == f->key) return false;
+    Node* search(const std::string& key) {
+        return traverse(key).second;
+    }
+
+    bool insert(const std::string& key, uint64_t value) {
+        Node* t = search(key);
+        if (t->key == key) return false; 
+
         int newBit = 0;
-        while (getBit(key, newBit) == getBit(f->key, newBit)) ++newBit;
+        while (getBit(key, newBit) == getBit(t->key, newBit)) ++newBit;
+
         Node* prev = head;
         Node* cur = head->left;
-        while (cur->bit < newBit) {
-            if (cur->bit <= prev->bit) break;
+        while (cur->bit < newBit && cur->bit > prev->bit) {
             prev = cur;
             if (getBit(key, cur->bit) == 1) cur = cur->right;
             else cur = cur->left;
         }
+
         Node* newNode = new Node(key, value, newBit);
         if (prev->right == cur) prev->right = newNode;
         else prev->left = newNode;
+
         if (getBit(key, newBit) == 1) {
             newNode->right = newNode;
             newNode->left = cur;
@@ -43,6 +50,7 @@ public:
             newNode->left = newNode;
             newNode->right = cur;
         }
+
         return true;
     }
 
@@ -56,13 +64,14 @@ private:
         return (key[charIdx] >> bitIdx) & 1;
     }
 
-    Node* search(std::string key) {
-        return search(head->left, key, -1);
-    }
-
-    Node* search(Node* cur, std::string key, int bit) {
-        if (cur->bit <= bit) return cur;
-        if (getBit(key, cur->bit) == 1) return search(cur->right, key, cur->bit);
-        else return search(cur->left, key, cur->bit);
+    std::pair<Node*, Node*> traverse(const std::string& key) {
+        Node* prev = head;
+        Node* cur = head->left;
+        while (cur->bit > prev->bit) {
+            prev = cur;
+            if (getBit(key, cur->bit) == 1) cur = cur->right;
+            else cur = cur->left;
+        }
+        return {prev, cur};
     }
 };
