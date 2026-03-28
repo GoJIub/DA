@@ -54,6 +54,39 @@ public:
         return true;
     }
 
+    bool remove(const std::string& key) {
+        auto [p, x] = traverse(key);
+        if (x->key != key) return false;
+
+        Node* q = traverse(p->key).first;
+
+        Node* prev = head;
+        Node* cur = head->left;
+        while (cur != p) {
+            prev = cur;
+            if (getBit(p->key, cur->bit) == 1) cur = cur->right;
+            else cur = cur->left;
+        }
+
+        Node* m = prev;
+        Node* n;
+        if (p->left == x) n = p->right;
+        else n = p->left;
+
+        if (m->left == p) m->left = n;
+        else m->right = n;
+        if (x != p) {
+            x->key = p->key;
+            x->value = p->value;
+
+            if (q->left == p) q->left = x;
+            else q->right = x;
+        }
+        delete p;
+
+        return true;
+    }
+
 private:
     Node* head;
     
