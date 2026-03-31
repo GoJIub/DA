@@ -98,6 +98,11 @@ public:
         return true;
     }
 
+    ~PATRICIA() {
+        clear(head->left, -1);
+        delete head;
+    }
+
 private:
     Node* head;
     
@@ -122,11 +127,14 @@ private:
         }
         return {prev, cur};
     }
+
+    void clear(Node* cur, int parentBit) {
+        if (cur->bit <= parentBit) return;
+        clear(cur->left, cur->bit);
+        clear(cur->right, cur->bit);
+        delete cur;
+    }
 };
-
-
-void serialize(PATRICIA P) {}
-void deserialize(PATRICIA P) {}
 
 
 int main() {
@@ -152,9 +160,9 @@ int main() {
             std::cin >> action >> path;
 
             if (action == "Save") {
-                serialize(P);
+                
             } else {
-                deserialize(P);
+                
             }
         } else {
             auto result = P.search(cmd);
