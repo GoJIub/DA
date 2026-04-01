@@ -130,7 +130,7 @@ public:
 
         uint32_t n = nodes.size();
         file.write(reinterpret_cast<const char*>(&n), sizeof(n));
-        if (!file) return "write error";
+        if (!file) return streamWriteError();
 
         for (auto* node : nodes) {
             uint16_t len = static_cast<uint16_t>(node->key.size());
@@ -145,11 +145,11 @@ public:
             file.write(reinterpret_cast<const char*>(&leftId), sizeof(leftId));
             file.write(reinterpret_cast<const char*>(&rightId), sizeof(rightId));
 
-            if (!file) return "write error";
+            if (!file) return streamWriteError();
         }
 
         file.flush();
-        if (!file) return "write error";
+        if (!file) return streamWriteError();
 
         return "";
     }
@@ -159,7 +159,7 @@ public:
         if (!file) return std::strerror(errno);
         uint32_t n = 0;
 
-        if (!file.read(reinterpret_cast<char*>(&n), sizeof(n))) return "invalid file format";
+        if (!file.read(reinterpret_cast<char*>(&n), sizeof(n))) return streamReadError(file);
 
         PATRICIA temp;
         std::vector<Node*> nodes(n, nullptr);
@@ -175,32 +175,48 @@ public:
             uint16_t len = 0;
             if (!file.read(reinterpret_cast<char*>(&len), sizeof(len))) {
                 cleanup();
+                return streamReadError(file);
+            }
+            if (len == 0 || len > 256) {
+                cleanup();
                 return "invalid file format";
             }
 
             std::string key(len, '\0');
             if (!file.read(key.data(), len)) {
                 cleanup();
-                return "invalid file format";
+                return streamReadError(file);
+            }
+            for (unsigned char ch : key) {
+                if (!std::isalpha(ch)) {
+                    cleanup();
+                    return "invalid file format";
+                }
             }
 
             uint64_t value = 0;
             if (!file.read(reinterpret_cast<char*>(&value), sizeof(value))) {
                 cleanup();
-                return "invalid file format";
+                return streamReadError(file);
             }
+            
             int bit = 0;
             if (!file.read(reinterpret_cast<char*>(&bit), sizeof(bit))) {
                 cleanup();
-                return "invalid file format";
+                return streamReadError(file);
             }
-            if (!file.read(reinterpret_cast<char*>(&leftIds[i]), sizeof(leftIds[i]))) {
+            if (bit < 0) {
                 cleanup();
                 return "invalid file format";
+            }
+
+            if (!file.read(reinterpret_cast<char*>(&leftIds[i]), sizeof(leftIds[i]))) {
+                cleanup();
+                return streamReadError(file);
             }
             if (!file.read(reinterpret_cast<char*>(&rightIds[i]), sizeof(rightIds[i]))) {
                 cleanup();
-                return "invalid file format";
+                return streamReadError(file);
             }
 
             nodes[i] = new Node(key, value, bit);
@@ -230,6 +246,15 @@ public:
         }
 
         temp.head->left = (n == 0) ? temp.head : nodes[0];
+
+        for (Node* node : nodes) {
+            Node* found = temp.traverse(node->key).second;
+            if (found != node || found->value != node->value) {
+                cleanup();
+                return "invalid file format";
+            }
+        }
+
         nodes.assign(n, nullptr);
         std::swap(head, temp.head);
         return "";
@@ -254,6 +279,16 @@ private:
         std::transform(key.begin(), key.end(), key.begin(), [](unsigned char ch) {
             return static_cast<char>(std::tolower(ch));
         });
+    }
+
+    std::string streamReadError(const std::ifstream& file) {
+        if (file.bad() && errno != 0) return std::strerror(errno);
+        return "invalid file format";
+    }
+
+    std::string streamWriteError() {
+        if (errno != 0) return std::strerror(errno);
+        return "write error";
     }
 
     std::pair<Node*, Node*> traverse(const std::string& key) {
@@ -293,7 +328,6 @@ private:
 
         return nullptr;
     }
-
     void collectNodes(Node* cur, int parentBit, std::vector<Node*>& nodes) {
         if (cur->bit <= parentBit) return;
 
