@@ -40,7 +40,7 @@ public:
         toLowerCase(key);
 
         Node* t = traverse(key).second;
-        if (t->key == key) return false; 
+        if (t->key == key) return false;
 
         int newBit = 0;
         while (getBit(key, newBit) == getBit(t->key, newBit)) ++newBit;
@@ -199,7 +199,7 @@ public:
                 cleanup();
                 return streamReadError(file);
             }
-            
+
             int bit = 0;
             if (!file.read(reinterpret_cast<char*>(&bit), sizeof(bit))) {
                 cleanup();
@@ -267,7 +267,7 @@ public:
 
 private:
     Node* head;
-    
+
     int getBit(const std::string& key, int i) {
         int charIdx = i / 8;
         int bitIdx = 7 - i % 8;
@@ -328,6 +328,7 @@ private:
 
         return nullptr;
     }
+
     void collectNodes(Node* cur, int parentBit, std::vector<Node*>& nodes) {
         if (cur->bit <= parentBit) return;
 
@@ -345,9 +346,8 @@ private:
     }
 };
 
-
 int main() {
-    PATRICIA P;
+    PATRICIA dictionary;
 
     std::string cmd;
     while (std::cin >> cmd) {
@@ -357,31 +357,32 @@ int main() {
                 uint64_t value;
                 std::cin >> word >> value;
 
-                if (P.insert(word, value)) std::cout << "OK\n";
+                if (dictionary.insert(word, value)) std::cout << "OK\n";
                 else std::cout << "Exist\n";
             } else if (cmd == "-") {
                 std::string word;
                 std::cin >> word;
 
-                if (P.remove(word)) std::cout << "OK\n";
+                if (dictionary.remove(word)) std::cout << "OK\n";
                 else std::cout << "NoSuchWord\n";
             } else if (cmd == "!") {
-                std::string action, path;
+                std::string action;
+                std::string path;
                 std::cin >> action >> path;
 
                 if (action == "Save") {
-                    std::string err = P.save(path);
+                    std::string err = dictionary.save(path);
                     if (err.empty()) std::cout << "OK\n";
                     else std::cout << "ERROR: " << err << "\n";
                 } else if (action == "Load") {
-                    std::string err = P.load(path);
+                    std::string err = dictionary.load(path);
                     if (err.empty()) std::cout << "OK\n";
                     else std::cout << "ERROR: " << err << "\n";
                 } else {
                     std::cout << "ERROR: unknown command\n";
                 }
             } else {
-                auto result = P.search(cmd);
+                auto result = dictionary.search(cmd);
 
                 if (result) std::cout << "OK: " << *result << "\n";
                 else std::cout << "NoSuchWord\n";
