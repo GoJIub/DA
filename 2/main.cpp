@@ -162,9 +162,17 @@ public:
         if (!file.read(reinterpret_cast<char*>(&n), sizeof(n))) return streamReadError(file);
 
         PATRICIA temp;
-        std::vector<Node*> nodes(n, nullptr);
-        std::vector<uint32_t> leftIds(n, UINT32_MAX);
-        std::vector<uint32_t> rightIds(n, UINT32_MAX);
+        
+        std::vector<Node*> nodes;
+        std::vector<uint32_t> leftIds, rightIds;
+        try {
+            nodes.resize(n, nullptr);
+            leftIds.resize(n, UINT32_MAX);
+            rightIds.resize(n, UINT32_MAX);
+        } catch (const std::bad_alloc&) {
+            return "invalid file format";
+        }
+
         auto cleanup = [&]() {
             for (Node* node : nodes) {
                 delete node;
