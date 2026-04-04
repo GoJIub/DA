@@ -55,6 +55,130 @@
 
 При сохранении и загрузке используются не только ключи и значения, но и параметры, необходимые для восстановления самой структуры дерева: индекс бита и номера потомков. За счёт этого дерево после загрузки восстанавливается в том же виде, в котором оно находилось до сохранения.
 
+Ниже приведены основные фрагменты реализации структуры дерева и операций над ней.
+
+Структура узла задаёт ключ, значение, номер проверяемого бита и ссылки на потомков:
+
+\begin{lstlisting}[language=C++]
+struct Node {
+    std::string key;
+    uint64_t value;
+    int bit;
+    Node* left;
+    Node* right;
+
+    Node(const std::string& key, uint64_t value, int bit)
+        : key(key), value(value), bit(bit),
+          left(nullptr), right(nullptr) {}
+};
+\end{lstlisting}
+
+Операция поиска спускается по дереву до терминальной вершины и затем проверяет совпадение ключа:
+
+\begin{lstlisting}[language=C++]
+const uint64_t* search(std::string key) const {
+    toLowerCase(key);
+    Node* x = traverse(key).second;
+    if (x->key == key) {
+        return &x->value;
+    }
+    return nullptr;
+}
+\end{lstlisting}
+
+Операция вставки определяет первый отличающийся бит нового слова и добавляет вершину в нужное место дерева:
+
+\begin{lstlisting}[language=C++]
+bool insert(std::string key, uint64_t value) {
+    toLowerCase(key);
+
+    Node* t = traverse(key).second;
+    if (t->key == key) return false;
+
+    int newBit = 0;
+    while (getBit(key, newBit) == getBit(t->key, newBit)) {
+        ++newBit;
+    }
+
+    Node* prev = head;
+    Node* cur = head->left;
+    while (cur->bit < newBit && cur->bit > prev->bit) {
+        prev = cur;
+        cur = getBit(key, cur->bit) ? cur->right : cur->left;
+    }
+
+    Node* newNode = new Node(key, value, newBit);
+    if (prev->right == cur) prev->right = newNode;
+    else prev->left = newNode;
+
+    if (getBit(key, newBit) == 1) {
+        newNode->right = newNode;
+        newNode->left = cur;
+    } else {
+        newNode->left = newNode;
+        newNode->right = cur;
+    }
+
+    return true;
+}
+\end{lstlisting}
+
+Операция удаления является самой сложной частью программы, так как требует корректной перепривязки обратных ссылок внутри дерева:
+
+\begin{lstlisting}[language=C++]
+bool remove(std::string key) {
+    toLowerCase(key);
+
+    Node* grand = head;
+    Node* parent = head;
+    Node* cur = head->left;
+
+    while (cur->bit > parent->bit) {
+        grand = parent;
+        parent = cur;
+        cur = getBit(key, cur->bit) ? cur->right : cur->left;
+    }
+
+    if (cur->key != key) return false;
+    Node* target = cur;
+
+    if (parent == target) {
+        Node* other = (target->left == target)
+            ? target->right : target->left;
+        if (other != head && other->bit > grand->bit) {
+            Node* holder = findBacklinkHolder(other, grand, key, target);
+            if (holder != nullptr) {
+                setChosenChild(holder, key, target, holder);
+            }
+        }
+
+        replaceChild(grand, target, other);
+        delete target;
+        return true;
+    }
+
+    Node* q = parent;
+    Node* other = (q->left == target) ? q->right : q->left;
+    Node* promoted = (other == q) ? target : other;
+
+    if (other != q && other->bit > q->bit) {
+        Node* holder = findBacklinkHolder(other, q, q->key, q);
+        if (holder != nullptr) {
+            setChosenChild(holder, q->key, q, target);
+        }
+    }
+
+    replaceChild(grand, q, promoted);
+    target->key = q->key;
+    target->value = q->value;
+
+    delete q;
+    return true;
+}
+\end{lstlisting}
+
+Эти фрагменты отражают самую важную часть реализации: описание структуры узла, поиск слова, логику вставки новой вершины и алгоритм удаления с изменением связей между вершинами дерева.
+
 \section{Консоль}
 \begin{alltt}
 root$ ./main
