@@ -14,17 +14,17 @@ std::vector<int> computeZ(const std::vector<std::string>& s) {
     int n = s.size();
     std::vector<int> z(n, 0);
     
-    int l = 0, r = 0;
+    int j = 0, k = 0;
     for (int i = 1; i < n; ++i) {
-        if (i <= r) {
-            z[i] = std::min(r - i + 1, z[i - l]);
+        if (i < k) {
+            z[i] = std::min(k - i, z[i - j]);
         }
         while (i + z[i] < n && s[z[i]] == s[i + z[i]]) {
             ++z[i];
         }
-        if (i + z[i] - 1 > r) {
-            l = i;
-            r = i + z[i] - 1;
+        if (z[i] > k - i) {
+            j = i;
+            k = i + z[i];
         }
     }
 
