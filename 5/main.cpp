@@ -68,8 +68,8 @@ private:
     int   active_length{0};
     int   remaining{0};
 
-    Node* make_leaf(int idx) {
-        return new Node(global_end, &global_end, idx);
+    Node* make_leaf(int beg, int idx) {
+        return new Node(beg, &global_end, idx);
     }
 
     Node* make_internal(int beg, int end) {
@@ -96,8 +96,11 @@ private:
             if (active_length == 0) active_edge = global_end;
 
             if (!active_node->children.count(text[active_edge])) {
-                active_node->children[text[active_edge]] = make_leaf(global_end - remaining + 1);
-                if (last_internal) { last_internal->suf_link = active_node; last_internal = nullptr; }
+                active_node->children[text[active_edge]] = make_leaf(global_end, global_end - remaining + 1);
+                if (last_internal) {
+                    last_internal->suf_link = active_node;
+                    last_internal = nullptr;
+                }
                 --remaining;
                 update_active_point();
             } else {
@@ -112,7 +115,10 @@ private:
 
                 if (text[child->beg + active_length] == c) {
                     ++active_length;
-                    if (last_internal) { last_internal->suf_link = active_node; last_internal = nullptr; }
+                    if (last_internal) {
+                        last_internal->suf_link = active_node;
+                        last_internal = nullptr;
+                    }
                     break;
                 }
 
@@ -120,7 +126,7 @@ private:
                 Node* internal = make_internal(old_beg, old_beg + active_length - 1);
                 child->beg = old_beg + active_length;
                 internal->children[text[child->beg]] = child;
-                internal->children[c] = make_leaf(global_end - remaining + 1);
+                internal->children[c] = make_leaf(global_end, global_end - remaining + 1);
                 active_node->children[text[old_beg]] = internal;
 
                 if (last_internal) last_internal->suf_link = internal;
@@ -144,6 +150,10 @@ private:
 };
 
 int main() {
+
+    std::ios::sync_with_stdio(0);
+    std::cin.tie(0);
+
     std::string text;
     std::cin >> text;
 
